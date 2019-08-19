@@ -1,3 +1,4 @@
+-i http://mirrors.aliyun.com/pypi/simple/  --trusted-host mirrors.aliyun.com
 requests==2.22.0
 beautifulsoup4==4.8.0
 pycryptodome==3.8.2
