@@ -158,7 +158,7 @@ def brush_ticket(dep_id, weeks, days) -> list:
     now_date = datetime.date.today().strftime("%Y-%m-%d")
     url = "https://www.91160.com/dep/getschmast/uid-21/depid-{}/date-{}/p-0.html".format(dep_id, now_date)
     r = session.get(url, headers=headers)
-    json_obj = json.loads(r.text)
+    json_obj = r.json()
     week_list: list = json_obj["week"]
     week_arr = []
     for week in weeks:
@@ -270,7 +270,7 @@ def init_data():
         "keyValue": hospitals[int(hospital_index) - 1]["unit_id"]
     }
     r = session.post(url, headers=headers, data=data)
-    departments = json.loads(r.text)
+    departments = r.json()
     dep_id_arr = []
     for department in departments:
         print(department["pubcat"])
