@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 from base64 import b64decode, b64encode
+from getpass import getpass
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
@@ -220,8 +221,8 @@ def get_ticket_result(redirect_url) -> bool:
 def init_data():
     result = {}
     while True:
-        username = input("请输入健康160用户名: ")
-        password = input("请输入健康160密码: ")
+        username = input("请输入用户名: ")
+        password = getpass("请输入密码: ")
         if login(username, password):
             result["username"] = username
             result["password"] = password
