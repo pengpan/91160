@@ -8,7 +8,7 @@ RUN apk add tzdata \
     && echo "${TIME_ZONE}" > /etc/timezone \
     && apk del tzdata
 
-RUN apk add g++
+RUN apk --no-cache add g++
 
 WORKDIR /usr/src/app
 
