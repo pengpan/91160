@@ -157,11 +157,11 @@ def tokens() -> str:
     return soup.find("input", id="tokens").attrs["value"]
 
 
-def brush_ticket(dep_id, weeks, days) -> list:
+def brush_ticket(unit_id, dep_id, weeks, days) -> list:
     json_obj = None
     try:
         now_date = datetime.date.today().strftime("%Y-%m-%d")
-        url = "https://www.91160.com/dep/getschmast/uid-21/depid-{}/date-{}/p-0.html".format(dep_id, now_date)
+        url = "https://www.91160.com/dep/getschmast/uid-{}/depid-{}/date-{}/p-0.html".format(unit_id, dep_id, now_date)
         r = session.get(url, headers=headers)
         json_obj = r.json()
         week_list: list = json_obj["week"]
@@ -188,9 +188,9 @@ def brush_ticket(dep_id, weeks, days) -> list:
         logging.error("刷票异常", e)
         return []
 
-def get_ticket(ticket, dep_id):
+def get_ticket(ticket, unit_id, dep_id):
     schedule_id = ticket["schedule_id"]
-    url = "https://www.91160.com/guahao/ystep1/uid-21/depid-{}/schid-{}.html".format(dep_id, schedule_id)
+    url = "https://www.91160.com/guahao/ystep1/uid-{}/depid-{}/schid-{}.html".format(unit_id, dep_id, schedule_id)
     r = session.get(url, headers=headers)
     r.encoding = r.apparent_encoding
     soup = BeautifulSoup(r.text, "html.parser")
@@ -259,7 +259,7 @@ def init_data():
     headers["Referer"] = "https://www.91160.com"
     headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
     r = session.post(url, headers=headers, data=data)
-    hospitals = json.loads(r.content.decode('unicode_escape'))
+    hospitals = json.loads(r.content.decode('utf-8'))
     for index, hospital in enumerate(hospitals):
         print("{}{}. {}".format(" " if index < 9 else "", index + 1, hospital["unit_name"]))
     print()
@@ -267,6 +267,7 @@ def init_data():
         hospital_index = input("请输入医院序号: ")
         is_number = True if re.match(r'^\d+$', hospital_index) else False
         if is_number and int(hospital_index) in range(1, len(hospitals) + 1):
+            result["unit_id"] = hospitals[int(hospital_index) - 1]["unit_id"]
             break
         else:
             print("输入有误，请重新输入！")
@@ -275,7 +276,7 @@ def init_data():
     print()
     url = "https://www.91160.com/ajax/getdepbyunit.html"
     data = {
-        "keyValue": hospitals[int(hospital_index) - 1]["unit_id"]
+        "keyValue": result["unit_id"]
     }
     r = session.post(url, headers=headers, data=data)
     departments = r.json()
@@ -327,6 +328,7 @@ def init_data():
 def run():
     result = init_data()
     logging.info(result)
+    unit_id = result["unit_id"]
     dep_id = result["dep_id"]
     weeks = result["weeks"]
     days = result["days"]
@@ -337,12 +339,12 @@ def run():
 
     logging.info("刷票开始")
     while True:
-        tickets = brush_ticket(dep_id, weeks, days)
+        tickets = brush_ticket(unit_id, dep_id, weeks, days)
         if len(tickets) > 0:
             logging.info(tickets)
             logging.info("刷到票了，开抢了...")
             if login(username, password):
-                get_ticket(tickets[0], dep_id)
+                get_ticket(tickets[0], unit_id, dep_id)
                 break
         else:
             logging.info("努力刷票中...")
