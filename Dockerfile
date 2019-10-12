@@ -1,7 +1,7 @@
 FROM python:3-alpine
 LABEL maintainer="MasterPan <i@hvv.me>"
 
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 ENV TIME_ZONE Asia/Shanghai
 RUN apk add tzdata \
     && cp /usr/share/zoneinfo/${TIME_ZONE} /etc/localtime \
