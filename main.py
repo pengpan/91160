@@ -12,7 +12,8 @@ from bs4 import BeautifulSoup
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 from base64 import b64decode, b64encode
-from getpass import getpass
+
+PUBLIC_KEY = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWuY4Gff8FO3BAKetyvNgGrdZM9CMNoe45SzHMXxAPWw6E2idaEjqe5uJFjVx55JW+5LUSGO1H5MdTcgGEfh62ink/cNjRGJpR25iVDImJlLi2izNs9zrQukncnpj6NGjZu/2z7XXfJb4XBwlrmR823hpCumSD1WiMl1FMfbVorQIDAQAB"
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
@@ -122,30 +123,33 @@ day_list = [
 
 
 def login(username, password) -> bool:
-    try:
-        url = "https://user.91160.com/login.html"
-        public_key = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWuY4Gff8FO3BAKetyvNgGrdZM9CMNoe45SzHMXxAPWw6E2idaEjqe5uJFjVx55JW+5LUSGO1H5MdTcgGEfh62ink/cNjRGJpR25iVDImJlLi2izNs9zrQukncnpj6NGjZu/2z7XXfJb4XBwlrmR823hpCumSD1WiMl1FMfbVorQIDAQAB"
-        rsa_key = RSA.importKey(b64decode(public_key))
-        cipher = Cipher_PKCS1_v1_5.new(rsa_key)
-        username = b64encode(cipher.encrypt(username.encode())).decode()
-        password = b64encode(cipher.encrypt(password.encode())).decode()
-        data = {
-            "username": username,
-            "password": password,
-            "target": "https://www.91160.com",
-            "error_num": 0,
-            "token": tokens()
-        }
-        headers["Referer"] = url
-        r = session.post(url, data=data, headers=headers, allow_redirects=False)
+    url = "https://user.91160.com/login.html"
+    rsa_key = RSA.importKey(b64decode(PUBLIC_KEY))
+    cipher = Cipher_PKCS1_v1_5.new(rsa_key)
+    username = b64encode(cipher.encrypt(username.encode())).decode()
+    password = b64encode(cipher.encrypt(password.encode())).decode()
+    data = {
+        "username": username,
+        "password": password,
+        "target": "https://www.91160.com",
+        "error_num": 0,
+        "token": tokens()
+    }
+    headers["Referer"] = url
+    r = session.post(url, data=data, headers=headers, allow_redirects=False)
+    if r.status_code == 302:
         redirect_url = r.headers["Location"]
         session.get(redirect_url, headers=headers)
-        print("登录成功")
+        logging.info("登录成功")
         return True
-    except Exception as e:
-        print("登录失败", e)
+    else:
+        logging.error("登录失败: {}".format(check_user(data)))
         return False
 
+def check_user(data) -> json:
+    url = "https://user.91160.com/checkUser.html"
+    r = session.post(url, data=data, headers=headers)
+    return json.loads(r.content.decode('utf-8'))
 
 def tokens() -> str:
     url = "https://user.91160.com/login.html"
@@ -169,10 +173,10 @@ def brush_ticket(unit_id, dep_id, weeks, days) -> list:
     doc_ids = json_obj["doc_ids"].split(",")
     result = []
     for doc in doc_ids:
-        doc_ = json_obj["sch"][doc]
+        _doc = json_obj["sch"][doc]
         for day in days:
-            if day in doc_:
-                sch = doc_[day]
+            if day in _doc:
+                sch = _doc[day]
                 if isinstance(sch, list) and len(sch) > 0:
                     for item in sch:
                         result.append(item)
@@ -220,16 +224,10 @@ def get_ticket_result(redirect_url) -> bool:
 
 
 def init_data():
-    result = {}
-    while True:
-        username = input("请输入用户名: ")
-        password = getpass("请输入密码: ")
-        if login(username, password):
-            result["username"] = username
-            result["password"] = password
-            break
-        else:
-            print("用户名和密码不匹配，请重新输入！")
+    result = {
+        "username": input("请输入用户名: "),
+        "password": input("请输入密码: ")
+    }
 
     print("=====请选择就医城市=====")
     print()
