@@ -156,35 +156,31 @@ def tokens() -> str:
 
 
 def brush_ticket(unit_id, dep_id, weeks, days) -> list:
-    json_obj = None
-    try:
-        now_date = datetime.date.today().strftime("%Y-%m-%d")
-        url = "https://www.91160.com/dep/getschmast/uid-{}/depid-{}/date-{}/p-0.html".format(unit_id, dep_id, now_date)
-        r = session.get(url, headers=headers)
-        json_obj = r.json()
-        week_list: list = json_obj["week"]
-        week_arr = []
-        for week in weeks:
-            week_arr.append(str(week_list.index(week)))
-        doc_ids = json_obj["doc_ids"].split(",")
-        result = []
-        for doc in doc_ids:
-            doc_ = json_obj["sch"][doc]
-            for day in days:
-                if day in doc_:
-                    sch = doc_[day]
-                    if isinstance(sch, list) and len(sch) > 0:
-                        for item in sch:
-                            result.append(item)
-                    else:
-                        for index in week_arr:
-                            if index in sch:
-                                result.append(sch[index])
-        return [element for element in result if element["y_state"] == "1"]
-    except Exception as e:
-        logging.info(json_obj)
-        logging.error("刷票异常", e)
-        return []
+    now_date = datetime.date.today().strftime("%Y-%m-%d")
+    url = "https://www.91160.com/dep/getschmast/uid-{}/depid-{}/date-{}/p-0.html".format(unit_id, dep_id, now_date)
+    r = session.get(url, headers=headers)
+    json_obj = r.json()
+    if "week" not in json_obj:
+        raise RuntimeError("刷票异常: {}".format(json_obj))
+    week_list: list = json_obj["week"]
+    week_arr = []
+    for week in weeks:
+        week_arr.append(str(week_list.index(week)))
+    doc_ids = json_obj["doc_ids"].split(",")
+    result = []
+    for doc in doc_ids:
+        doc_ = json_obj["sch"][doc]
+        for day in days:
+            if day in doc_:
+                sch = doc_[day]
+                if isinstance(sch, list) and len(sch) > 0:
+                    for item in sch:
+                        result.append(item)
+                else:
+                    for index in week_arr:
+                        if index in sch:
+                            result.append(sch[index])
+    return [element for element in result if element["y_state"] == "1"]
 
 def get_ticket(ticket, unit_id, dep_id):
     schedule_id = ticket["schedule_id"]
@@ -337,7 +333,11 @@ def run():
 
     logging.info("刷票开始")
     while True:
-        tickets = brush_ticket(unit_id, dep_id, weeks, days)
+        try:
+            tickets = brush_ticket(unit_id, dep_id, weeks, days)
+        except Exception as e:
+            logging.error(e)
+            break
         if len(tickets) > 0:
             logging.info(tickets)
             logging.info("刷到票了，开抢了...")
