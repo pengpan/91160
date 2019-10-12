@@ -2,3 +2,4 @@
 requests==2.22.0
 beautifulsoup4==4.8.0
 pycryptodome==3.8.2
+fake-useragent==0.1.11

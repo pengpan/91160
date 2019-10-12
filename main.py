@@ -13,9 +13,11 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 from base64 import b64decode, b64encode
 from getpass import getpass
+from fake_useragent import UserAgent
 
+ua = UserAgent(verify_ssl=False)
 headers = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
+    "User-Agent": ua.random
 }
 session = requests.Session()
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -156,30 +158,35 @@ def tokens() -> str:
 
 
 def brush_ticket(dep_id, weeks, days) -> list:
-    now_date = datetime.date.today().strftime("%Y-%m-%d")
-    url = "https://www.91160.com/dep/getschmast/uid-21/depid-{}/date-{}/p-0.html".format(dep_id, now_date)
-    r = session.get(url, headers=headers)
-    json_obj = r.json()
-    week_list: list = json_obj["week"]
-    week_arr = []
-    for week in weeks:
-        week_arr.append(str(week_list.index(week)))
-    doc_ids = json_obj["doc_ids"].split(",")
-    result = []
-    for doc in doc_ids:
-        doc_ = json_obj["sch"][doc]
-        for day in days:
-            if day in doc_:
-                sch = doc_[day]
-                if isinstance(sch, list) and len(sch) > 0:
-                    for item in sch:
-                        result.append(item)
-                else:
-                    for index in week_arr:
-                        if index in sch:
-                            result.append(sch[index])
-    return [element for element in result if element["y_state"] == "1"]
-
+    json_obj = None
+    try:
+        now_date = datetime.date.today().strftime("%Y-%m-%d")
+        url = "https://www.91160.com/dep/getschmast/uid-21/depid-{}/date-{}/p-0.html".format(dep_id, now_date)
+        r = session.get(url, headers=headers)
+        json_obj = r.json()
+        week_list: list = json_obj["week"]
+        week_arr = []
+        for week in weeks:
+            week_arr.append(str(week_list.index(week)))
+        doc_ids = json_obj["doc_ids"].split(",")
+        result = []
+        for doc in doc_ids:
+            doc_ = json_obj["sch"][doc]
+            for day in days:
+                if day in doc_:
+                    sch = doc_[day]
+                    if isinstance(sch, list) and len(sch) > 0:
+                        for item in sch:
+                            result.append(item)
+                    else:
+                        for index in week_arr:
+                            if index in sch:
+                                result.append(sch[index])
+        return [element for element in result if element["y_state"] == "1"]
+    except Exception as e:
+        logging.info(json_obj)
+        logging.error("刷票异常", e)
+        return []
 
 def get_ticket(ticket, dep_id):
     schedule_id = ticket["schedule_id"]
@@ -207,7 +214,7 @@ def get_ticket(ticket, dep_id):
     r = session.post(url, data=data, headers=headers, allow_redirects=False)
     redirect_url = r.headers["Location"]
     if get_ticket_result(redirect_url):
-        logging.info("预约成功")
+        logging.info("预约成功，请留意短信通知！")
 
 
 def get_ticket_result(redirect_url) -> bool:
