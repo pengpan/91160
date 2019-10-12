@@ -15,7 +15,7 @@ from base64 import b64decode, b64encode
 from getpass import getpass
 from fake_useragent import UserAgent
 
-ua = UserAgent(verify_ssl=False)
+ua = UserAgent()
 headers = {
     "User-Agent": ua.random
 }
