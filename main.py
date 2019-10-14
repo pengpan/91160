@@ -296,7 +296,8 @@ def init_data():
         print("{}. {}".format(week["value"], week["name"]))
     print()
     while True:
-        week_str = input("请输入需要周几的号[可多选，如(6,7)]: ")
+        week_str = input("请输入需要周几的号[可多选，如(6,7)](默认不限制): ")
+        week_str = week_str if len(week_str) > 0 else ",".join(map(lambda x: str(x), list(range(1, 8))))
         result["weeks"] = week_str.split(",")
         break
 
