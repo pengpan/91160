@@ -224,10 +224,15 @@ def get_ticket_result(redirect_url) -> bool:
 
 
 def init_data():
-    result = {
-        "username": input("请输入用户名: "),
-        "password": input("请输入密码: ")
-    }
+    while True:
+        username = input("请输入用户名: ")
+        password = input("请输入密码: ")
+        print("登录中，请稍等...")
+        if login(username, password):
+            result = {"username": username, "password": password}
+            break
+        else:
+            print("用户名或密码错误，请重新登录！")
 
     print("=====请选择就医城市=====")
     print()
@@ -325,8 +330,6 @@ def run():
     dep_id = result["dep_id"]
     weeks = result["weeks"]
     days = result["days"]
-    username = result["username"]
-    password = result["password"]
     # 刷票休眠时间，频率过高会导致刷票接口拒绝请求
     sleep_time = 10
 
@@ -340,9 +343,8 @@ def run():
         if len(tickets) > 0:
             logging.info(tickets)
             logging.info("刷到票了，开抢了...")
-            if login(username, password):
-                get_ticket(tickets[0], unit_id, dep_id)
-                break
+            get_ticket(tickets[0], unit_id, dep_id)
+            break
         else:
             logging.info("努力刷票中...")
         time.sleep(sleep_time)
