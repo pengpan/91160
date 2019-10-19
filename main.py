@@ -138,7 +138,7 @@ def login(username, password) -> bool:
     headers["Referer"] = url
     r = session.post(url, data=data, headers=headers, allow_redirects=False)
     if r.status_code == 302:
-        redirect_url = r.headers["Location"]
+        redirect_url = r.headers["location"]
         session.get(redirect_url, headers=headers)
         logging.info("登录成功")
         return True
@@ -210,9 +210,12 @@ def get_ticket(ticket, unit_id, dep_id):
     headers["origin"] = "https://www.91160.com"
     url = "https://www.91160.com/guahao/ysubmit.html"
     r = session.post(url, data=data, headers=headers, allow_redirects=False)
-    redirect_url = r.headers["Location"]
-    if get_ticket_result(redirect_url):
+    if r.status_code == 302:
+        # redirect_url = r.headers["location"]
+        # if get_ticket_result(redirect_url):
         logging.info("预约成功，请留意短信通知！")
+    else:
+        logging.info("预约失败")
 
 
 def get_ticket_result(redirect_url) -> bool:
