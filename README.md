@@ -1,7 +1,7 @@
 # 健康160全自动刷票程序
 
-[![Actions Status](https://github.com/pengpan/91160/workflows/Python application/badge.svg)](https://github.com/pengpan/91160/actions)
-[![Actions Status](https://github.com/pengpan/91160/workflows/Docker Image CI/badge.svg)](https://github.com/pengpan/91160/actions)
+[![Actions Status](https://github.com/pengpan/91160/workflows/Docker%20Image%20CI/badge.svg)](https://github.com/pengpan/91160/actions)
+[![Actions Status](https://github.com/pengpan/91160/workflows/Python%20application/badge.svg)](https://github.com/pengpan/91160/actions)
 
 ## 使用
 
