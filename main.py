@@ -201,7 +201,7 @@ def get_ticket(ticket, unit_id, dep_id):
         "dep_id": ticket["dep_id"],
         "time_type": ticket["time_type"],
         "doctor_id": ticket["doctor_id"],
-        "detlid": soup.find("ul", id="delts").find("li").attrs["val"],
+        "detlid": soup.select('#delts li')[0].attrs["val"],
         "detlid_realtime": soup.find("input", id="detlid_realtime").attrs["value"],
         "level_code": soup.find("input", id="level_code").attrs["value"]
     }
@@ -215,6 +215,7 @@ def get_ticket(ticket, unit_id, dep_id):
         # if get_ticket_result(redirect_url):
         logging.info("预约成功，请留意短信通知！")
     else:
+        logging.info(r.text)
         logging.info("预约失败")
 
 
@@ -327,7 +328,7 @@ def init_data():
 
 
 def run():
-    result = init_data()
+    result = {'username': '17061316994', 'password': 'ac123456', 'unit_id': 21, 'dep_id': '200076593', 'weeks': ['6'], 'days': ['am']}
     logging.info(result)
     unit_id = result["unit_id"]
     dep_id = result["dep_id"]
