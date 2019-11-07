@@ -1,4 +1,4 @@
-# 健康160全自动刷票程序
+# 健康160全自动挂号脚本
 
 [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fpengpan%2F91160%2Fbadge&style=flat)](https://actions-badge.atrox.dev/pengpan/91160/goto)
 
