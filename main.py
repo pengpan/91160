@@ -328,7 +328,7 @@ def init_data():
 
 
 def run():
-    result = {'username': '17061316994', 'password': 'ac123456', 'unit_id': 21, 'dep_id': '200076593', 'weeks': ['6'], 'days': ['am']}
+    result = init_data()
     logging.info(result)
     unit_id = result["unit_id"]
     dep_id = result["dep_id"]
