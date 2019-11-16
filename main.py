@@ -13,10 +13,13 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 from base64 import b64decode, b64encode
 
-PUBLIC_KEY = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWuY4Gff8FO3BAKetyvNgGrdZM9CMNoe45SzHMXxAPWw6E2idaEjqe5uJFjVx55JW+5LUSGO1H5MdTcgGEfh62ink/cNjRGJpR25iVDImJlLi2izNs9zrQukncnpj6NGjZu/2z7XXfJb4XBwlrmR823hpCumSD1WiMl1FMfbVorQIDAQAB"
+PUBLIC_KEY = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWuY4Gff8FO3BAKetyvNgGrdZM9CMNoe45SzHMXxAPWw6E2idaEjqe5uJFjVx55JW" \
+             "+5LUSGO1H5MdTcgGEfh62ink/cNjRGJpR25iVDImJlLi2izNs9zrQukncnpj6NGjZu" \
+             "/2z7XXfJb4XBwlrmR823hpCumSD1WiMl1FMfbVorQIDAQAB "
 
 headers = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/76.0.3809.100 Safari/537.36 "
 }
 session = requests.Session()
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -146,10 +149,12 @@ def login(username, password) -> bool:
         logging.error("登录失败: {}".format(check_user(data)))
         return False
 
+
 def check_user(data) -> json:
     url = "https://user.91160.com/checkUser.html"
     r = session.post(url, data=data, headers=headers)
     return json.loads(r.content.decode('utf-8'))
+
 
 def tokens() -> str:
     url = "https://user.91160.com/login.html"
@@ -185,6 +190,7 @@ def brush_ticket(unit_id, dep_id, weeks, days) -> list:
                         if index in sch:
                             result.append(sch[index])
     return [element for element in result if element["y_state"] == "1"]
+
 
 def get_ticket(ticket, unit_id, dep_id):
     schedule_id = ticket["schedule_id"]
