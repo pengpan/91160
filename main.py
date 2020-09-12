@@ -19,7 +19,9 @@ PUBLIC_KEY = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWuY4Gff8FO3BAKetyvNgGrdZM9C
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/76.0.3809.100 Safari/537.36 "
+                  "Chrome/76.0.3809.100 Safari/537.36",
+    "Referer": "https://www.91160.com",
+    "Origin": "https://www.91160.com"
 }
 session = requests.Session()
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -145,7 +147,6 @@ def login(username, password) -> bool:
         "error_num": 0,
         "token": tokens()
     }
-    headers["Referer"] = url
     r = session.post(url, data=data, headers=headers, allow_redirects=False)
     if r.status_code == 302:
         redirect_url = r.headers["location"]
@@ -207,7 +208,6 @@ def brush_ticket_new(doc_id, dep_id, weeks, days) -> list:
         "date": now_date,
         "days": 6
     }
-    headers["Referer"] = "https://www.91160.com"
     r = session.post(url, headers=headers, data=data)
     json_obj = r.json()
 
@@ -223,10 +223,10 @@ def brush_ticket_new(doc_id, dep_id, weeks, days) -> list:
     if len(week_arr) == 0:
         raise RuntimeError("刷票异常: {}".format(json_obj))
 
-    doc_sch = json_obj["sch"][dep_id + "_" + doc_id]
+    doc_sch = json_obj["sch"]["{}_{}".format(dep_id, doc_id)]
     result = []
     for day in days:
-        key = dep_id + "_" + doc_id + "_" + day
+        key = "{}_{}_{}".format(dep_id, doc_id, day)
         if key in doc_sch:
             doc_sch_day = doc_sch[key]
             for week in week_arr:
@@ -260,9 +260,6 @@ def get_ticket(ticket, unit_id, dep_id):
         "detlid_realtime": soup.find("input", id="detlid_realtime").attrs["value"],
         "level_code": soup.find("input", id="level_code").attrs["value"]
     }
-    headers["host"] = "www.91160.com"
-    headers["referer"] = url
-    headers["origin"] = "https://www.91160.com"
     url = "https://www.91160.com/guahao/ysubmit.html"
     r = session.post(url, data=data, headers=headers, allow_redirects=False)
     if r.status_code == 302:
@@ -312,8 +309,6 @@ def init_data():
     data = {
         "c": cities[int(city_index) - 1]["cityId"]
     }
-    headers["Referer"] = "https://www.91160.com"
-    headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
     r = session.post(url, headers=headers, data=data)
     hospitals = json.loads(r.content.decode('utf-8'))
     for index, hospital in enumerate(hospitals):
@@ -351,8 +346,28 @@ def init_data():
             break
         else:
             print("输入有误，请重新输入！")
-    headers["Referer"] = ""
-    headers["Content-Type"] = ""
+
+    print("=====请选择医生=====")
+    print()
+    now_date = datetime.date.today().strftime("%Y-%m-%d")
+    unit_id = result["unit_id"]
+    dep_id = result["dep_id"]
+    url = "https://www.91160.com/dep/getschmast/uid-{}/depid-{}/date-{}/p-0.html".format(unit_id, dep_id, now_date)
+    r = session.get(url, headers=headers)
+    doctors = r.json()["doc"]
+    doc_id_arr = []
+    for doctor in doctors:
+        doc_id_arr.append(doctor["doctor_id"])
+        print("{}. {}".format(doctor["doctor_id"], doctor["doctor_name"]))
+    print()
+    while True:
+        doctor_index = input("请输入医生编号: ")
+        is_number = True if re.match(r'^\d+$', doctor_index) else False
+        if is_number and int(doctor_index) in doc_id_arr:
+            result["doc_id"] = doctor_index
+            break
+        else:
+            print("输入有误，请重新输入！")
 
     print("=====请选择哪天的号=====")
     print()
@@ -394,12 +409,11 @@ def run():
     sleep_time = 10
 
     logging.info("刷票开始")
+    print("https://www.91160.com/doctors/index/docid-{}.html".format(doc_id))
     while True:
         try:
-            tickets = brush_ticket(unit_id, dep_id, weeks, days)
-            # TODO 通过医生挂号
-            if doc_id != "":
-                tickets = brush_ticket_new(doc_id, dep_id, weeks, days)
+            # tickets = brush_ticket(unit_id, dep_id, weeks, days)
+            tickets = brush_ticket_new(doc_id, dep_id, weeks, days)
         except Exception as e:
             logging.error(e)
             break
