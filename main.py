@@ -82,31 +82,38 @@ cities = [
 weeks_list = [
     {
         "name": "星期一",
-        "value": "1"
+        "value": "1",
+        "alias": "一"
     },
     {
         "name": "星期二",
-        "value": "2"
+        "value": "2",
+        "alias": "二"
     },
     {
         "name": "星期三",
-        "value": "3"
+        "value": "3",
+        "alias": "三"
     },
     {
         "name": "星期四",
-        "value": "4"
+        "value": "4",
+        "alias": "四"
     },
     {
         "name": "星期五",
-        "value": "5"
+        "value": "5",
+        "alias": "五"
     },
     {
         "name": "星期六",
-        "value": "6"
+        "value": "6",
+        "alias": "六"
     },
     {
         "name": "星期天",
-        "value": "7"
+        "value": "7",
+        "alias": "日"
     }
 ]
 day_list = [
@@ -190,6 +197,48 @@ def brush_ticket(unit_id, dep_id, weeks, days) -> list:
                         if index in sch:
                             result.append(sch[index])
     return [element for element in result if element["y_state"] == "1"]
+
+
+def brush_ticket_new(doc_id, dep_id, weeks, days) -> list:
+    now_date = datetime.date.today().strftime("%Y-%m-%d")
+    url = "https://www.91160.com/doctors/ajaxgetclass.html"
+    data = {
+        "docid": doc_id,
+        "date": now_date,
+        "days": 6
+    }
+    headers["Referer"] = "https://www.91160.com"
+    r = session.post(url, headers=headers, data=data)
+    json_obj = r.json()
+
+    if "dates" not in json_obj:
+        raise RuntimeError("刷票异常: {}".format(json_obj))
+
+    date_list: dict = json_obj["dates"]
+    week_arr = []
+    for week in weeks:
+        val = convert_week(week)
+        key = list(date_list.keys())[list(date_list.values()).index(val)]
+        week_arr.append(key)
+    if len(week_arr) == 0:
+        raise RuntimeError("刷票异常: {}".format(json_obj))
+
+    doc_sch = json_obj["sch"][dep_id + "_" + doc_id]
+    result = []
+    for day in days:
+        key = dep_id + "_" + doc_id + "_" + day
+        if key in doc_sch:
+            doc_sch_day = doc_sch[key]
+            for week in week_arr:
+                result.append(doc_sch_day[week])
+    return [element for element in result if element["y_state"] == "1"]
+
+
+def convert_week(w):
+    for week in weeks_list:
+        if week["value"] == w:
+            return week["alias"]
+    return ""
 
 
 def get_ticket(ticket, unit_id, dep_id):
@@ -338,6 +387,7 @@ def run():
     logging.info(result)
     unit_id = result["unit_id"]
     dep_id = result["dep_id"]
+    doc_id = result["doc_id"]
     weeks = result["weeks"]
     days = result["days"]
     # 刷票休眠时间，频率过高会导致刷票接口拒绝请求
@@ -347,6 +397,9 @@ def run():
     while True:
         try:
             tickets = brush_ticket(unit_id, dep_id, weeks, days)
+            # TODO 通过医生挂号
+            if doc_id != "":
+                tickets = brush_ticket_new(doc_id, dep_id, weeks, days)
         except Exception as e:
             logging.error(e)
             break
