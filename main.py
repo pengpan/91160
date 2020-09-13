@@ -244,6 +244,7 @@ def convert_week(w):
 def get_ticket(ticket, unit_id, dep_id):
     schedule_id = ticket["schedule_id"]
     url = "https://www.91160.com/guahao/ystep1/uid-{}/depid-{}/schid-{}.html".format(unit_id, dep_id, schedule_id)
+    logging.info(url)
     r = session.get(url, headers=headers)
     r.encoding = r.apparent_encoding
     soup = BeautifulSoup(r.text, "html.parser")
@@ -258,8 +259,12 @@ def get_ticket(ticket, unit_id, dep_id):
         "doctor_id": ticket["doctor_id"],
         "detlid": soup.select('#delts li')[0].attrs["val"],
         "detlid_realtime": soup.find("input", id="detlid_realtime").attrs["value"],
-        "level_code": soup.find("input", id="level_code").attrs["value"]
+        "level_code": soup.find("input", id="level_code").attrs["value"],
+        "addressId": "2913",
+        "address": "China",
+        "buyinsurance": 1
     }
+    logging.info(data)
     url = "https://www.91160.com/guahao/ysubmit.html"
     r = session.post(url, data=data, headers=headers, allow_redirects=False)
     if r.status_code == 302:
@@ -409,7 +414,7 @@ def run():
     sleep_time = 10
 
     logging.info("刷票开始")
-    print("https://www.91160.com/doctors/index/docid-{}.html".format(doc_id))
+    logging.info("https://www.91160.com/doctors/index/docid-{}.html".format(doc_id))
     while True:
         try:
             # tickets = brush_ticket(unit_id, dep_id, weeks, days)
