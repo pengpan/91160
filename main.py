@@ -227,15 +227,16 @@ def brush_ticket_new(doc_id, dep_id, weeks, days) -> list:
         "days": 6
     }
     r = session.post(url, headers=headers, data=data)
-    if r.status_code == 403:
-        logging.info("Token过期，重新登陆")
-        login(configs['username'], configs['password'])
-        return []
-
     json_obj = r.json()
 
     if "dates" not in json_obj:
-        raise RuntimeError("刷票异常: {}".format(json_obj))
+        if "status" in json_obj:
+            logging.info("Token过期，重新登陆")
+            time.sleep(30)
+            login(configs['username'], configs['password'])
+            return []
+        else:
+            raise RuntimeError("刷票异常: {}".format(json_obj))
 
     date_list: dict = json_obj["dates"]
     week_arr = []
@@ -502,7 +503,7 @@ def run():
     weeks = configs["weeks"]
     days = configs["days"]
     # 刷票休眠时间，频率过高会导致刷票接口拒绝请求
-    sleep_time = 10
+    sleep_time = 15
 
     logging.info("刷票开始")
     logging.info(
