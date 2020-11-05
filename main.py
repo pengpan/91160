@@ -517,7 +517,7 @@ def run():
         if len(tickets) > 0:
             logging.info(tickets)
             logging.info("刷到票了，开抢了...")
-            # get_ticket(tickets[0], unit_id, dep_id)
+            get_ticket(tickets[0], unit_id, dep_id)
             break
         else:
             logging.info("努力刷票中...")
