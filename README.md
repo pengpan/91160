@@ -2,6 +2,12 @@
 
 [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fpengpan%2F91160%2Fbadge&style=flat)](https://actions-badge.atrox.dev/pengpan/91160/goto)
 
+## 规划
+- [x] 实现基本功能
+- [ ] 动态选择就诊人
+- [ ] 接入IP池刷号
+- [ ] 实现定时抢号
+
 ## 使用
 
 需要运行在 python 3.6 以上版本（其它版本暂未测试)
