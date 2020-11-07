@@ -13,6 +13,22 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 from base64 import b64decode, b64encode
 
+# 请修改此处，或者保持为空
+configs = {
+    'username': '',
+    'password': '',
+    'city_index': '',
+    'unit_id': '',
+    'dep_id': '',
+    'doc_id': '',
+    'weeks': [],
+    'days': [],
+    'unit_name': '',
+    'dep_name': '',
+    'doctor_name': ''
+}
+
+
 PUBLIC_KEY = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWuY4Gff8FO3BAKetyvNgGrdZM9CMNoe45SzHMXxAPWw6E2idaEjqe5uJFjVx55JW" \
              "+5LUSGO1H5MdTcgGEfh62ink/cNjRGJpR25iVDImJlLi2izNs9zrQukncnpj6NGjZu" \
              "/2z7XXfJb4XBwlrmR823hpCumSD1WiMl1FMfbVorQIDAQAB "
@@ -24,7 +40,8 @@ headers = {
     "Origin": "https://www.91160.com"
 }
 session = requests.Session()
-logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 # 国内热门城市数据(广州 长沙 香港 上海 武汉 重庆 北京 东莞 深圳 海外 郑州 天津 淮南)
 cities = [
@@ -174,7 +191,8 @@ def tokens() -> str:
 
 def brush_ticket(unit_id, dep_id, weeks, days) -> list:
     now_date = datetime.date.today().strftime("%Y-%m-%d")
-    url = "https://www.91160.com/dep/getschmast/uid-{}/depid-{}/date-{}/p-0.html".format(unit_id, dep_id, now_date)
+    url = "https://www.91160.com/dep/getschmast/uid-{}/depid-{}/date-{}/p-0.html".format(
+        unit_id, dep_id, now_date)
     r = session.get(url, headers=headers)
     json_obj = r.json()
     if "week" not in json_obj:
@@ -212,7 +230,13 @@ def brush_ticket_new(doc_id, dep_id, weeks, days) -> list:
     json_obj = r.json()
 
     if "dates" not in json_obj:
-        raise RuntimeError("刷票异常: {}".format(json_obj))
+        if "status" in json_obj:
+            logging.info("Token过期，重新登陆")
+            time.sleep(30)
+            login(configs['username'], configs['password'])
+            return []
+        else:
+            raise RuntimeError("刷票异常: {}".format(json_obj))
 
     date_list: dict = json_obj["dates"]
     week_arr = []
@@ -230,7 +254,8 @@ def brush_ticket_new(doc_id, dep_id, weeks, days) -> list:
         if key in doc_sch:
             doc_sch_day = doc_sch[key]
             for week in week_arr:
-                result.append(doc_sch_day[week])
+                if week in doc_sch_day:
+                    result.append(doc_sch_day[week])
     return [element for element in result if element["y_state"] == "1"]
 
 
@@ -243,7 +268,8 @@ def convert_week(w):
 
 def get_ticket(ticket, unit_id, dep_id):
     schedule_id = ticket["schedule_id"]
-    url = "https://www.91160.com/guahao/ystep1/uid-{}/depid-{}/schid-{}.html".format(unit_id, dep_id, schedule_id)
+    url = "https://www.91160.com/guahao/ystep1/uid-{}/depid-{}/schid-{}.html".format(
+        unit_id, dep_id, schedule_id)
     logging.info(url)
     r = session.get(url, headers=headers)
     r.encoding = r.apparent_encoding
@@ -251,18 +277,26 @@ def get_ticket(ticket, unit_id, dep_id):
     data = {
         "sch_data": soup.find(attrs={"name": "sch_data"}).attrs["value"],
         "mid": soup.find(attrs={"name": "mid"}).attrs["value"],
-        "accept": 1,
+        "hisMemId": "",
+        "disease_input": "",
+        "order_no": "",
+        "disease_content": "",
+        "accept": "1",
         "unit_id": soup.find("input", id="unit_id").attrs["value"],
         "schedule_id": ticket["schedule_id"],
         "dep_id": ticket["dep_id"],
+        "his_dep_id": "",
+        "sch_date": "",
         "time_type": ticket["time_type"],
         "doctor_id": ticket["doctor_id"],
+        "his_doc_id": "",
         "detlid": soup.select('#delts li')[0].attrs["val"],
         "detlid_realtime": soup.find("input", id="detlid_realtime").attrs["value"],
         "level_code": soup.find("input", id="level_code").attrs["value"],
-        "addressId": "2913",
-        "address": "China",
-        "buyinsurance": 1
+        "is_hot": "",
+        # "addressId": "2913",
+        # "address": "China",
+        # "buyinsurance": 1
     }
     logging.info(data)
     url = "https://www.91160.com/guahao/ysubmit.html"
@@ -284,137 +318,196 @@ def get_ticket_result(redirect_url) -> bool:
     return result == "预约成功"
 
 
-def init_data():
+def set_user_configs():
     while True:
-        username = input("请输入用户名: ")
-        password = input("请输入密码: ")
-        print("登录中，请稍等...")
-        if login(username, password):
-            result = {"username": username, "password": password}
-            break
+        if configs['username'] != '':
+            print("当前用户名为：%s" % configs['username'])
         else:
-            print("用户名或密码错误，请重新登录！")
-
-    print("=====请选择就医城市=====")
-    print()
-    for index, city in enumerate(cities):
-        print("{}{}. {}".format(" " if index < 9 else "", index + 1, city["name"]))
-    print()
-    while True:
-        city_index = input("请输入城市序号: ")
-        is_number = True if re.match(r'^\d+$', city_index) else False
-        if is_number and int(city_index) in range(1, len(cities) + 1):
-            break
+            configs['username'] = input("请输入用户名: ")
+        if configs['password'] != '':
+            print("当前密码为：%s" % configs['password'])
         else:
-            print("输入有误，请重新输入！")
+            configs['password'] = input("请输入密码: ")
+        if configs['username'] != '' and configs['password'] != '':
+            print("登录中，请稍等...")
+            if login(configs['username'], configs['password']):
+                time.sleep(1)
+                print("登录成功")
+                break
+            else:
+                configs['username'] = ''
+                configs['password'] = ''
+                time.sleep(1)
+                print("用户名或密码错误，请重新输入！")
+        else:
+            configs['username'] = ''
+            configs['password'] = ''
+            time.sleep(1)
+            print("用户名/密码信息不完整，已清空，请重新输入")
 
-    print("=====请选择医院=====")
-    print()
+
+def set_city_configs():
+    if configs['city_index'] == "":
+        print("=====请选择就医城市=====\n")
+        for index, city in enumerate(cities):
+            print("{}{}. {}".format(" " if index <
+                                    9 else "", index + 1, city["name"]))
+        print()
+        while True:
+            city_index = input("请输入城市序号: ")
+            is_number = True if re.match(r'^\d+$', city_index) else False
+            if is_number and int(city_index) in range(1, len(cities) + 1):
+                configs['city_index'] = city_index
+                break
+            else:
+                print("输入有误，请重新输入！")
+    else:
+        print("当前选择城市为：%s" % cities[int(configs['city_index']) - 1]["name"])
+
+
+def set_hospital_configs():
     url = "https://www.91160.com/ajax/getunitbycity.html"
     data = {
-        "c": cities[int(city_index) - 1]["cityId"]
+        "c": cities[int(configs['city_index']) - 1]["cityId"]
     }
     r = session.post(url, headers=headers, data=data)
     hospitals = json.loads(r.content.decode('utf-8'))
-    for index, hospital in enumerate(hospitals):
-        print("{}{}. {}".format(" " if index < 9 else "", index + 1, hospital["unit_name"]))
-    print()
-    while True:
-        hospital_index = input("请输入医院序号: ")
-        is_number = True if re.match(r'^\d+$', hospital_index) else False
-        if is_number and int(hospital_index) in range(1, len(hospitals) + 1):
-            result["unit_id"] = hospitals[int(hospital_index) - 1]["unit_id"]
-            break
-        else:
-            print("输入有误，请重新输入！")
+    if configs['unit_id'] == "":
+        print("=====请选择医院=====\n")
+        for index, hospital in enumerate(hospitals):
+            print("{}{}. {}".format(" " if index < 9 else "",
+                                    index + 1, hospital["unit_name"]))
+        print()
+        while True:
+            hospital_index = input("请输入医院序号: ")
+            is_number = True if re.match(r'^\d+$', hospital_index) else False
+            if is_number and int(hospital_index) in range(1, len(hospitals) + 1):
+                configs["unit_id"] = hospitals[int(
+                    hospital_index) - 1]["unit_id"]
+                configs["unit_name"] = hospitals[int(
+                    hospital_index) - 1]["unit_name"]
+                break
+            else:
+                print("输入有误，请重新输入！")
+    else:
+        print("当前选择医院为：%s（%s）" % (configs["unit_name"], configs["unit_id"]))
 
-    print("=====请选择科室=====")
-    print()
+
+def set_department_configs():
     url = "https://www.91160.com/ajax/getdepbyunit.html"
     data = {
-        "keyValue": result["unit_id"]
+        "keyValue": configs["unit_id"]
     }
     r = session.post(url, headers=headers, data=data)
     departments = r.json()
-    dep_id_arr = []
-    for department in departments:
-        print(department["pubcat"])
-        for child in department["childs"]:
-            dep_id_arr.append(child["dep_id"])
-            print("    {}. {}".format(child["dep_id"], child["dep_name"]))
-    print()
-    while True:
-        department_index = input("请输入科室序号: ")
-        is_number = True if re.match(r'^\d+$', department_index) else False
-        if is_number and int(department_index) in dep_id_arr:
-            result["dep_id"] = department_index
-            break
-        else:
-            print("输入有误，请重新输入！")
+    if configs['dep_id'] == "":
+        print("=====请选择科室=====\n")
+        dep_id_arr = []
+        dep_name = {}
+        for department in departments:
+            print(department["pubcat"])
+            for child in department["childs"]:
+                dep_id_arr.append(child["dep_id"])
+                dep_name[child["dep_id"]] = child["dep_name"]
+                print("    {}. {}".format(child["dep_id"], child["dep_name"]))
+        print()
+        while True:
+            department_index = input("请输入科室序号: ")
+            is_number = True if re.match(r'^\d+$', department_index) else False
+            if is_number and int(department_index) in dep_id_arr:
+                configs["dep_id"] = department_index
+                configs["dep_name"] = dep_name[int(department_index)]
+                break
+            else:
+                print("输入有误，请重新输入！")
+    else:
+        print("当前选择科室为：%s（%s）" % (configs["dep_name"], configs["dep_id"]))
 
-    print("=====请选择医生=====")
-    print()
+
+def set_doctor_configs():
     now_date = datetime.date.today().strftime("%Y-%m-%d")
-    unit_id = result["unit_id"]
-    dep_id = result["dep_id"]
-    url = "https://www.91160.com/dep/getschmast/uid-{}/depid-{}/date-{}/p-0.html".format(unit_id, dep_id, now_date)
+    unit_id = configs["unit_id"]
+    dep_id = configs["dep_id"]
+    url = "https://www.91160.com/dep/getschmast/uid-{}/depid-{}/date-{}/p-0.html".format(
+        unit_id, dep_id, now_date)
     r = session.get(url, headers=headers)
     doctors = r.json()["doc"]
     doc_id_arr = []
-    for doctor in doctors:
-        doc_id_arr.append(doctor["doctor_id"])
-        print("{}. {}".format(doctor["doctor_id"], doctor["doctor_name"]))
-    print()
-    while True:
-        doctor_index = input("请输入医生编号: ")
-        is_number = True if re.match(r'^\d+$', doctor_index) else False
-        if is_number and int(doctor_index) in doc_id_arr:
-            result["doc_id"] = doctor_index
+    doc_name = {}
+    if configs["doc_id"] == "":
+        print("=====请选择医生=====\n")
+        for doctor in doctors:
+            doc_id_arr.append(doctor["doctor_id"])
+            doc_name[doctor["doctor_id"]] = doctor["doctor_name"]
+            print("{}. {}".format(doctor["doctor_id"], doctor["doctor_name"]))
+        print()
+        while True:
+            doctor_index = input("请输入医生编号: ")
+            is_number = True if re.match(r'^\d+$', doctor_index) else False
+            if is_number and int(doctor_index) in doc_id_arr:
+                configs["doc_id"] = doctor_index
+                configs["doctor_name"] = doc_name[int(doctor_index)]
+                break
+            else:
+                print("输入有误，请重新输入！")
+    else:
+        print("当前选择医生为：%s（%s）" % (configs["doctor_name"], configs["doc_id"]))
+
+
+def set_week_configs():
+    if not configs["weeks"]:
+        print("=====请选择哪天的号=====\n")
+        for week in weeks_list:
+            print("{}. {}".format(week["value"], week["name"]))
+        print()
+        while True:
+            week_str = input("请输入需要周几的号[可多选，如(6,7)](默认不限制): ")
+            week_str = week_str if len(week_str) > 0 else ",".join(
+                map(lambda x: str(x), list(range(1, 8))))
+            configs["weeks"] = week_str.split(",")
             break
-        else:
-            print("输入有误，请重新输入！")
 
-    print("=====请选择哪天的号=====")
-    print()
-    for week in weeks_list:
-        print("{}. {}".format(week["value"], week["name"]))
-    print()
-    while True:
-        week_str = input("请输入需要周几的号[可多选，如(6,7)](默认不限制): ")
-        week_str = week_str if len(week_str) > 0 else ",".join(map(lambda x: str(x), list(range(1, 8))))
-        result["weeks"] = week_str.split(",")
-        break
 
-    print("=====请选择时间段=====")
-    print()
-    for index, day in enumerate(day_list):
-        print("{}. {}".format(index + 1, day["name"]))
-    print()
-    while True:
-        day_index = input("请输入时间段序号: ")
-        is_number = True if re.match(r'^\d+$', day_index) else False
-        if is_number and int(day_index) in range(1, len(day_list) + 1):
-            result["days"] = day_list[int(day_index) - 1]["value"]
-            break
-        else:
-            print("输入有误，请重新输入！")
+def set_days_configs():
+    if not configs["days"]:
+        print("=====请选择时间段=====\n")
+        for index, day in enumerate(day_list):
+            print("{}. {}".format(index + 1, day["name"]))
+        print()
+        while True:
+            day_index = input("请输入时间段序号: ")
+            is_number = True if re.match(r'^\d+$', day_index) else False
+            if is_number and int(day_index) in range(1, len(day_list) + 1):
+                configs["days"] = day_list[int(day_index) - 1]["value"]
+                break
+            else:
+                print("输入有误，请重新输入！")
 
-    return result
+
+def init_data():
+    set_user_configs()
+    set_city_configs()
+    set_hospital_configs()
+    set_department_configs()
+    set_doctor_configs()
+    set_week_configs()
+    set_days_configs()
 
 
 def run():
-    result = init_data()
-    logging.info(result)
-    unit_id = result["unit_id"]
-    dep_id = result["dep_id"]
-    doc_id = result["doc_id"]
-    weeks = result["weeks"]
-    days = result["days"]
+    init_data()
+    logging.info(configs)
+    unit_id = configs["unit_id"]
+    dep_id = configs["dep_id"]
+    doc_id = configs["doc_id"]
+    weeks = configs["weeks"]
+    days = configs["days"]
     # 刷票休眠时间，频率过高会导致刷票接口拒绝请求
-    sleep_time = 10
+    sleep_time = 15
 
     logging.info("刷票开始")
-    logging.info("https://www.91160.com/doctors/index/docid-{}.html".format(doc_id))
+    logging.info(
+        "https://www.91160.com/doctors/index/docid-{}.html".format(doc_id))
     while True:
         try:
             # tickets = brush_ticket(unit_id, dep_id, weeks, days)
@@ -431,7 +524,14 @@ def run():
             logging.info("努力刷票中...")
         time.sleep(sleep_time)
     logging.info("刷票结束")
+    print("当前配置为：\n\t%s" % configs)
 
 
 if __name__ == '__main__':
-    run()
+    try:
+        run()
+    except KeyboardInterrupt:
+        print("\n=====强制退出=====")
+        print("当前配置为：\n\t%s" % configs)
+
+        exit(0)
