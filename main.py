@@ -294,12 +294,13 @@ def get_ticket(ticket, unit_id, dep_id):
         "detlid_realtime": soup.find("input", id="detlid_realtime").attrs["value"],
         "level_code": soup.find("input", id="level_code").attrs["value"],
         "is_hot": "",
-        # "addressId": "2913",
-        # "address": "China",
-        # "buyinsurance": 1
+        "addressId": "3317",
+        "address": "China",
+        "buyinsurance": 1
     }
-    logging.info(data)
     url = "https://www.91160.com/guahao/ysubmit.html"
+    logging.error("URL: {}".format(url))
+    logging.error("PARAM: {}".format(data))
     r = session.post(url, data=data, headers=headers, allow_redirects=False)
     if r.status_code == 302:
         # redirect_url = r.headers["location"]
