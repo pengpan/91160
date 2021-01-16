@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_PKCS1_v1_5
 from base64 import b64decode, b64encode
+from fake_useragent import UserAgent
 
 # 请修改此处，或者保持为空
 configs = {
@@ -28,17 +29,12 @@ configs = {
     'doctor_name': ''
 }
 
+ua = UserAgent()
 
 PUBLIC_KEY = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWuY4Gff8FO3BAKetyvNgGrdZM9CMNoe45SzHMXxAPWw6E2idaEjqe5uJFjVx55JW" \
              "+5LUSGO1H5MdTcgGEfh62ink/cNjRGJpR25iVDImJlLi2izNs9zrQukncnpj6NGjZu" \
              "/2z7XXfJb4XBwlrmR823hpCumSD1WiMl1FMfbVorQIDAQAB "
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/76.0.3809.100 Safari/537.36",
-    "Referer": "https://www.91160.com",
-    "Origin": "https://www.91160.com"
-}
 session = requests.Session()
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -151,6 +147,14 @@ day_list = [
 ]
 
 
+def get_headers() -> json:
+    return {
+        "User-Agent": ua.random,
+        "Referer": "https://www.91160.com",
+        "Origin": "https://www.91160.com"
+    }
+
+
 def login(username, password) -> bool:
     url = "https://user.91160.com/login.html"
     rsa_key = RSA.importKey(b64decode(PUBLIC_KEY))
@@ -164,10 +168,10 @@ def login(username, password) -> bool:
         "error_num": 0,
         "token": tokens()
     }
-    r = session.post(url, data=data, headers=headers, allow_redirects=False)
+    r = session.post(url, data=data, headers=get_headers(), allow_redirects=False)
     if r.status_code == 302:
         redirect_url = r.headers["location"]
-        session.get(redirect_url, headers=headers)
+        session.get(redirect_url, headers=get_headers())
         logging.info("登录成功")
         return True
     else:
@@ -177,13 +181,13 @@ def login(username, password) -> bool:
 
 def check_user(data) -> json:
     url = "https://user.91160.com/checkUser.html"
-    r = session.post(url, data=data, headers=headers)
+    r = session.post(url, data=data, headers=get_headers())
     return json.loads(r.content.decode('utf-8'))
 
 
 def tokens() -> str:
     url = "https://user.91160.com/login.html"
-    r = session.get(url, headers=headers)
+    r = session.get(url, headers=get_headers())
     r.encoding = r.apparent_encoding
     soup = BeautifulSoup(r.text, "html.parser")
     return soup.find("input", id="tokens").attrs["value"]
@@ -193,7 +197,7 @@ def brush_ticket(unit_id, dep_id, weeks, days) -> list:
     now_date = datetime.date.today().strftime("%Y-%m-%d")
     url = "https://www.91160.com/dep/getschmast/uid-{}/depid-{}/date-{}/p-0.html".format(
         unit_id, dep_id, now_date)
-    r = session.get(url, headers=headers)
+    r = session.get(url, headers=get_headers())
     json_obj = r.json()
     if "week" not in json_obj:
         raise RuntimeError("刷票异常: {}".format(json_obj))
@@ -226,7 +230,7 @@ def brush_ticket_new(doc_id, dep_id, weeks, days) -> list:
         "date": now_date,
         "days": 6
     }
-    r = session.post(url, headers=headers, data=data)
+    r = session.post(url, headers=get_headers(), data=data)
     json_obj = r.json()
 
     if "dates" not in json_obj:
@@ -271,7 +275,7 @@ def get_ticket(ticket, unit_id, dep_id):
     url = "https://www.91160.com/guahao/ystep1/uid-{}/depid-{}/schid-{}.html".format(
         unit_id, dep_id, schedule_id)
     logging.info(url)
-    r = session.get(url, headers=headers)
+    r = session.get(url, headers=get_headers())
     r.encoding = r.apparent_encoding
     soup = BeautifulSoup(r.text, "html.parser")
     data = {
@@ -301,7 +305,7 @@ def get_ticket(ticket, unit_id, dep_id):
     url = "https://www.91160.com/guahao/ysubmit.html"
     logging.error("URL: {}".format(url))
     logging.error("PARAM: {}".format(data))
-    r = session.post(url, data=data, headers=headers, allow_redirects=False)
+    r = session.post(url, data=data, headers=get_headers(), allow_redirects=False)
     if r.status_code == 302:
         # redirect_url = r.headers["location"]
         # if get_ticket_result(redirect_url):
@@ -312,7 +316,7 @@ def get_ticket(ticket, unit_id, dep_id):
 
 
 def get_ticket_result(redirect_url) -> bool:
-    r = session.get(redirect_url, headers=headers)
+    r = session.get(redirect_url, headers=get_headers())
     r.encoding = r.apparent_encoding
     soup = BeautifulSoup(r.text, "html.parser")
     result = soup.find(attrs={"class": "sucess-title"}).text
@@ -371,7 +375,7 @@ def set_hospital_configs():
     data = {
         "c": cities[int(configs['city_index']) - 1]["cityId"]
     }
-    r = session.post(url, headers=headers, data=data)
+    r = session.post(url, headers=get_headers(), data=data)
     hospitals = json.loads(r.content.decode('utf-8'))
     if configs['unit_id'] == "":
         print("=====请选择医院=====\n")
@@ -399,7 +403,7 @@ def set_department_configs():
     data = {
         "keyValue": configs["unit_id"]
     }
-    r = session.post(url, headers=headers, data=data)
+    r = session.post(url, headers=get_headers(), data=data)
     departments = r.json()
     if configs['dep_id'] == "":
         print("=====请选择科室=====\n")
@@ -431,7 +435,7 @@ def set_doctor_configs():
     dep_id = configs["dep_id"]
     url = "https://www.91160.com/dep/getschmast/uid-{}/depid-{}/date-{}/p-0.html".format(
         unit_id, dep_id, now_date)
-    r = session.get(url, headers=headers)
+    r = session.get(url, headers=get_headers())
     doctors = r.json()["doc"]
     doc_id_arr = []
     doc_name = {}

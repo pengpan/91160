@@ -2,3 +2,4 @@
 requests==2.24.0
 beautifulsoup4==4.9.1
 pycryptodome==3.9.8
+fake-useragent==0.1.11
