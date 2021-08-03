@@ -523,7 +523,14 @@ def run():
         if len(tickets) > 0:
             logging.info(tickets)
             logging.info("刷到票了，开抢了...")
-            get_ticket(tickets[0], unit_id, dep_id)
+            try:
+                if get_ticket(tickets[0], unit_id, dep_id):
+                    break
+                else:
+                    continue
+            except Exception as e:
+                logging.info("抢票失败，正在重试，发生错误：{}".format(e))
+                continue
             break
         else:
             logging.info("努力刷票中...")
