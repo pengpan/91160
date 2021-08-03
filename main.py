@@ -310,9 +310,11 @@ def get_ticket(ticket, unit_id, dep_id):
         # redirect_url = r.headers["location"]
         # if get_ticket_result(redirect_url):
         logging.info("预约成功，请留意短信通知！")
+        return True
     else:
         logging.info(r.text)
         logging.info("预约失败")
+        return False
 
 
 def get_ticket_result(redirect_url) -> bool:
