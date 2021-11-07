@@ -1,8 +1,7 @@
-FROM python:3-alpine
-LABEL maintainer="MasterPan <i@hvv.me>"
+FROM python:3-slim-buster
 
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
-RUN apk add -U --no-cache tzdata g++
+LABEL maintainer="MasterPan <327069739@qq.com>"
+
 ENV TZ Asia/Shanghai
 
 WORKDIR /usr/src/app
