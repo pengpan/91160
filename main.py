@@ -1,6 +1,7 @@
-# coding: utf-8
-# author: MasterPan
-# email:  327069739@qq.com
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# @Author  : MasterPan
+# @Email   : 327069739@qq.com
 
 import re
 import time
@@ -92,6 +93,10 @@ cities = [
     {
         "name": "淮南",
         "cityId": "3014"
+    },
+    {
+        "name": "more...",
+        "cityId": "more"
     }
 ]
 weeks_list = [
@@ -354,6 +359,7 @@ def set_user_configs():
 
 
 def set_city_configs():
+    global cities
     if configs['city_index'] == "":
         print("=====请选择就医城市=====\n")
         for index, city in enumerate(cities):
@@ -368,6 +374,11 @@ def set_city_configs():
                 break
             else:
                 print("输入有误，请重新输入！")
+        if (cities[int(configs['city_index']) - 1]["cityId"] == 'more') :
+            with open("cities.json", 'r') as f:
+                cities = json.loads(f.read())
+            configs['city_index'] = ''
+            set_city_configs()
     else:
         print("当前选择城市为：%s" % cities[int(configs['city_index']) - 1]["name"])
 
