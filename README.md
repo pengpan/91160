@@ -1,4 +1,4 @@
-# 健康160全自动挂号脚本
+# 健康160全自动挂号脚本（停止维护，请移步至[91160-cli](https://github.com/pengpan/91160-cli)）
 
 [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fpengpan%2F91160%2Fbadge&style=flat)](https://actions-badge.atrox.dev/pengpan/91160/goto)
 
